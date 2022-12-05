@@ -1,67 +1,79 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import Banner from '../components/banner'
-import Card from '../components/card'
-import styles from '../styles/Home.module.css'
-import coffeeStoresData from '../data/coffee-stores.json'
-import { fetchCoffeeStores } from '../lib/coffee-stores'
-import useTrackLocation from '../hooks/use-track-location'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from "react";
+import Head from "next/head";
+import Image from "next/image";
+import styles from "../styles/Home.module.css";
+
+import Banner from "../components/banner";
+import Card from "../components/card";
+
+import coffeeStoresData from "../data/coffee-stores.json";
+import { fetchCoffeeStores } from "../lib/coffee-stores";
+import useTrackLocation from "../hooks/use-track-location";
+import { ACTION_TYPES, StoreContext } from "../store/store-context";
+
+
+// NEXT_PUBLIC_FOURSQUARE_API_KEY=fsq3KZ0c3Bn3wGKF1wxQx4Up4uMv2nltZGIW3xDZon7ahH8= 
+// NEXT_PUBLIC_UNSPLASH_ACCESS_KEY=Cqi-GB_eg6y7npldV4pz0r1g2UmIjw68T6eDxdpJeVE
+// AIRTABLE_API_KEY=key27Rh3DBTZNEPbH
+// AIRTABLE_BASE_KEY=appRyH472jWqQAhPR
+//.env.local
 
 
 export async function getStaticProps(context) {
-  console.log("Hi Static")
 
-  //const coffeeStores = await fetchCoffeeStores();
+  const coffeeStores = await fetchCoffeeStores();
 
   return {
     props: {
-      coffeeStores: coffeeStoresData
-      //coffeeStores: data.results
+      coffeeStores,
     }, // will be passed to the page component as props
-  }
+  };
 }
 
 export default function Home(props) {
-  console.log('props', props)
-  const { handleTrakLocation, locationErrorMsg, isFindingLocation } = useTrackLocation();
-  const [coffeeStores, setCoffeeStores] = useState("");
+
+  const { handleTrackLocation, locationErrorMsg, isFindingLocation } =
+    useTrackLocation();
+
   const [coffeeStoresError, setCoffeeStoresError] = useState(null);
-  //const {dispatch, state} = useContext(StoreContext);
 
-  // useEffect(() => {
-  // async function setCoffeeStoresByLocation() {
-  //   if (latLong) {
-  //     try {
-  //       const response = await fetch(
-  //         `/api/getCoffeeStoreByLocation?latLong=${latLong}&limit=30`
-  //       );
+  const { dispatch, state } = useContext(StoreContext);
 
-  //       const coffeeStores = await response.json();
+  const { coffeeStores, latLong } = state;
 
-  //       // setCoffeeStores(fetchedCoffeeStores);
-  //       dispatch({
-  //         type: ACTION_TYPES.SET_COFFEE_STORES,
-  //         payload: {
-  //           coffeeStores,
-  //         },
-  //       });
-  //       setCoffeeStoresError("");
-  //       //set coffee stores
-  //     } catch (error) {
-  //       //set error
-  //       console.log({ error });
-  //       setCoffeeStoresError(error.message);
-  //     }
-  //   }
-  // }
-  // setCoffeeStoresByLocation();
-  //}, [latLong]);
 
+  useEffect(() => {
+    async function setCoffeeStoresByLocation() {
+      if (latLong) {
+        try {
+          const response = await fetch(
+            `/api/getCoffeeStoreByLocation?latLong=${latLong}&limit=30`
+          );
+
+          const coffeeStores = await response.json();
+
+          // setCoffeeStores(fetchedCoffeeStores);
+          dispatch({
+            type: ACTION_TYPES.SET_COFFEE_STORES,
+            payload: {
+              coffeeStores,
+            },
+          });
+          setCoffeeStoresError("");
+          //set coffee stores
+        } catch (error) {
+          //set error
+          console.log({ error });
+          setCoffeeStoresError(error.message);
+        }
+      }
+    }
+    setCoffeeStoresByLocation();
+  }, [dispatch,latLong]);
 
   const handleOnBannerBtnClick = () => {
-    handleTrakLocation();
-  }
+    handleTrackLocation();
+  };
   return (
     <div className={styles.container}>
       <Head>
@@ -71,28 +83,17 @@ export default function Home(props) {
       </Head>
 
       <main className={styles.main}>
-        <Banner buttonText={isFindingLocation ? "Locating..." : "View stores nearby"} handleOnClick={handleOnBannerBtnClick} />
-        {locationErrorMsg && <p>Something went wrong: {locationErrorMsg}</p>}
+        <Banner
+          buttonText={isFindingLocation ? "Locating..." : "View stores nearby"}
+          handleOnClick={handleOnBannerBtnClick}
+        />
+        {locationErrorMsg && <p>Something went wrong location: {locationErrorMsg}</p>}
         {coffeeStoresError && <p>Something went wrong: {coffeeStoresError}</p>}
         <div className={styles.heroImage}>
-          <Image src="/static/hero-image.png" alt='hero image' width={700} height={400} />
+          <Image src="/static/hero-image.png" width={700} height={400} />
         </div>
-        {props.coffeeStores.length > 0 && (
-          <div className={styles.sectionWrapper}>
-            <h2 className={styles.heading2}>Toronto stores</h2>
-            <div className={styles.cardLayout}>
-              {props.coffeeStores.map(coffeeStore => {
-                return (
-                  <Card key={coffeeStore.id} name={coffeeStore.name} imgUrl={coffeeStore.imgUrl} href={`/coffee-store/${coffeeStore.id}`} className={styles.card} />
-                )
-              })
-              }
-            </div>
-          </div>
-        )}
 
-{/* 
-{coffeeStores.length > 0 && (
+        {coffeeStores.length > 0 && (
           <div className={styles.sectionWrapper}>
             <h2 className={styles.heading2}>Stores near me</h2>
             <div className={styles.cardLayout}>
@@ -136,9 +137,8 @@ export default function Home(props) {
               </div>
             </>
           )}
-        </div> */}
-
+        </div>
       </main>
     </div>
-  )
+  );
 }
